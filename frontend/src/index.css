@@ -1,0 +1,90 @@
+@import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
+
+@layer base {
+  body {
+    @apply bg-slate-100 text-slate-800 font-sans antialiased min-h-screen selection:bg-emerald-600 selection:text-white;
+    background-color: #f4f6f0;
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Light Forest Panel & Card Styles */
+.glass-panel {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 16px -2px rgba(15, 23, 42, 0.04), 0 2px 4px -2px rgba(15, 23, 42, 0.02);
+}
+
+.glass-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.glass-card:hover {
+  border-color: #2e7d32;
+  box-shadow: 0 8px 24px -4px rgba(46, 125, 50, 0.12);
+}
+
+/* Leaflet Light Map Overrides */
+.leaflet-container {
+  background: #f8faf7 !important;
+  font-family: inherit;
+  border-radius: 0.75rem;
+}
+.leaflet-popup-content-wrapper {
+  background: #ffffff !important;
+  color: #1e293b !important;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.75rem !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1) !important;
+}
+.leaflet-popup-tip {
+  background: #ffffff !important;
+}
+
+/* Status Indicator Pulse Animation */
+@keyframes emeraldPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.08); }
+}
+.animate-emerald-pulse {
+  animation: emeraldPulse 2.5s infinite ease-in-out;
+}
+
+/* GBIF Light Forest Theme Utilities */
+.gbif-hero-bg {
+  background-image: linear-gradient(to bottom, rgba(27, 67, 50, 0.65), rgba(27, 67, 50, 0.85)), url('https://images.unsplash.com/photo-1561731216-c3a4d99437d5?q=80&w=2000&auto=format&fit=crop');
+  background-size: cover;
+  background-position: center 35%;
+  color: #ffffff;
+}
+
+.gbif-teal-banner {
+  background: linear-gradient(90deg, #1b4332 0%, #2d6a4f 100%);
+  color: #ffffff;
+}
+
+.gbif-light-card {
+  background: #ffffff;
+  color: #1e293b;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.04);
+}

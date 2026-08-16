@@ -1,0 +1,5 @@
+station_id,name,latitude,longitude,zone
+ST-01,Sitaghat Core Grid 01,21.674,79.3056,Core
+ST-02,Karmajhiri Stream Grid,21.682,79.312,Core
+ST-07,Pyorthadi Buffer Grid,21.65,79.28,Buffer
+ST-09,Turiya Gate Buffer Grid,21.62,79.25,Village-Adjacent

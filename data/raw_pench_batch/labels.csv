@@ -1,0 +1,6 @@
+filename,confirmed_tiger_id,side,source
+GEN_0001.jpg,SYN-T01,left,ai_generated
+GEN_0002.jpg,SYN-T02,right,ai_generated
+GEN_0003.jpg,SYN-T03,left,ai_generated
+GEN_0004.jpg,BLANK,none,ai_generated
+GEN_0005.jpg,SYN-T04,right,ai_generated
