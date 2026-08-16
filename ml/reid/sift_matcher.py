@@ -32,6 +32,7 @@ class MatchResult:
 
 class StripeMatcher:
     def __init__(self):
+        import pickle
         self.sift = cv2.SIFT_create(nfeatures=600)
         self.bf = cv2.BFMatcher()
         try:
@@ -39,6 +40,20 @@ class StripeMatcher:
         except Exception:
             self.flann = None
         self.catalogue: dict[str, list[np.ndarray]] = {}  # tiger_id -> list of descriptor sets
+
+        # Auto-load precomputed catalogue index from disk
+        index_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "models", "sift_catalogue_index.pkl")
+        if os.path.exists(index_path):
+            try:
+                with open(index_path, "rb") as f:
+                    index_data = pickle.load(f)
+                    for tiger_id, records in index_data.items():
+                        for rec in records:
+                            des = rec.get("descriptors") if isinstance(rec, dict) else rec
+                            if des is not None:
+                                self.catalogue.setdefault(tiger_id, []).append(des)
+            except Exception as e:
+                print(f"Catalogue index loading notice: {e}")
 
     def _extract(self, crop_path: str) -> np.ndarray | None:
         if not os.path.exists(crop_path):

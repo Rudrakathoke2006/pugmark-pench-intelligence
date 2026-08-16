@@ -21,6 +21,9 @@ env/
 *.db
 *.sqlite
 *.sqlite3
+*.zip
+data/**/*.zip
+Tiger_Identification.zip
 backend/database/pugmark.db
 
 # Logs & temp

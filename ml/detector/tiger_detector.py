@@ -24,6 +24,8 @@ class TigerCrop:
 
 class TigerDetector:
     def __init__(self, weights: str = MODEL_WEIGHTS, device: str = "cpu"):
+        if os.path.exists("models/yolo11n.pt"):
+            weights = "models/yolo11n.pt"
         self.weights = weights
         self.device = device
         self.model = None
