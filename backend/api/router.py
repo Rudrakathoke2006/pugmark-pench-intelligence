@@ -1111,6 +1111,21 @@ def get_live_stream_status(db: Session = Depends(get_db)):
         "recent_events": recent_events
     }
 
+@api_router.post("/gis/stations/process")
+def process_station_spatial_metadata(
+    station_id: str = Form("ST-01"),
+    image_path: str = Form("static/crops/t017_flank.jpg"),
+    db: Session = Depends(get_db)
+):
+    """
+    100% Offline GIS Engine: Parses camera station metadata, computes UTM Zone 44N
+    coordinates, coverage radii, and distance to Pench Reserve core center.
+    """
+    from backend.services.geo_station_processor import GeoStationProcessor
+    processor = GeoStationProcessor(db)
+    return processor.process_station_cctv_frame(station_id, image_path)
+
+
 
     return {
         "mode": "SIMULATED REAL-TIME FEED — Compressed Timing, Real Images, Synthetic Stations",
