@@ -190,3 +190,75 @@ def test_legacy_validation_helpers():
     res = validate_timestamps(t_list)
     assert len(res) == 3
     assert res[2]["is_flagged"] == True
+
+def test_seasonal_lighting_megadetector_thresholds(tmp_path):
+    bf = BlankFilter()
+    blank_img = tmp_path / "blank_sample.jpg"
+    cv2.imwrite(str(blank_img), np.zeros((100, 100, 3), dtype=np.uint8))
+
+    res_day = bf.classify("img_day", str(blank_img), season="leaf-off", lighting="day")
+    res_night = bf.classify("img_night", str(blank_img), season="leaf-off", lighting="night_ir")
+    assert res_day.season == "leaf-off"
+    assert res_night.lighting == "night_ir"
+
+def test_sift_descriptor_caching_and_catalogue_pruning(tmp_path):
+    matcher = StripeMatcher()
+    crop_a = tmp_path / "crop_a.jpg"
+    img = np.zeros((300, 400), dtype=np.uint8)
+    for x in range(30, 370, 30):
+        cv2.line(img, (x, 10), (x+10, 290), 255, 10)
+    cv2.imwrite(str(crop_a), img)
+
+    # Enroll 7 crops to test top-5 catalogue pruning
+    for i in range(7):
+        matcher.enroll("T-PRUNE", str(crop_a), top_k_prune=5)
+
+    assert len(matcher.catalogue["T-PRUNE"]) <= 5
+    assert str(crop_a) in matcher.descriptor_cache
+
+def test_reid_threshold_recalibration():
+    matcher = StripeMatcher()
+    matcher.recalibrate_thresholds(0.65, 0.20)
+    assert matcher.high_threshold == 0.65
+    assert matcher.low_threshold == 0.20
+
+def test_rolling_baseline_alerts_and_severity_escalation():
+    hist_centroids = [(21.685, 79.312), (21.684, 79.310), (21.686, 79.314)]
+    curr_centroid = (21.618, 79.251) # 8+ km shift into buffer
+
+    # Initial alert
+    alert1 = check_range_shift(hist_centroids, curr_centroid, "buffer", 45.0, 50.0, repeat_alert_count=0)
+    assert alert1 is not None
+    assert alert1.severity == "high"
+
+    # Repeat alert -> severity escalated to critical
+    alert2 = check_range_shift(hist_centroids, curr_centroid, "buffer", 45.0, 50.0, repeat_alert_count=1)
+    assert alert2 is not None
+    assert alert2.severity == "critical"
+    assert "ESCALATED TREND" in alert2.reason
+
+def test_false_negative_audit():
+    quarantined = [{"image_id": "IMG-001", "file_path": "frames/img001.jpg"}]
+    gt_labels = {"IMG-001": "Tiger"}
+    from backend.services.accuracy_metrics import audit_false_negatives
+
+    res = audit_false_negatives(quarantined, ground_truth_labels=gt_labels)
+    assert res["false_negatives_count"] == 1
+    assert res["false_negative_rate"] == 1.0
+
+def test_reject_review_decision_handler():
+    from backend.database.connection import SessionLocal
+    from backend.database.models import Identification, DecisionLog
+    db = SessionLocal()
+    ident = db.query(Identification).first()
+    if ident:
+        ident.review_status = "PENDING"
+        db.commit()
+        from backend.api.router import submit_review_decision
+        res = submit_review_decision(ident.identification_id, action="REJECT", db=db)
+        assert res["status"] == "success"
+        assert res["action"] == "REJECT"
+        updated_ident = db.query(Identification).filter(Identification.identification_id == ident.identification_id).first()
+        assert updated_ident.review_status == "REJECTED"
+    db.close()
+

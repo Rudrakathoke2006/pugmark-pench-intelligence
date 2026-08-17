@@ -30,6 +30,12 @@ backend/database/pugmark.db
 *.log
 tmp/
 .temp/
+backend/static/frames/*
+!backend/static/frames/.gitkeep
+backend/static/videos/*
+!backend/static/videos/.gitkeep
+backend/static/zips/*
+!backend/static/zips/.gitkeep
 
 # IDE & OS files
 .DS_Store

@@ -31,6 +31,7 @@ def compute_accuracy_metrics(images: List[Dict[str, Any]], identifications: List
     precision = round(tp / max(1, tp + fp), 4)
     recall = round(tp / max(1, tp + fn), 4)
     f1_score = round(2 * (precision * recall) / max(0.001, precision + recall), 4)
+    fn_rate = round(fn / max(1, tp + fn), 4)
 
     # Re-ID 5-way breakdown
     auto_matches = [i for i in identifications if i.get("decision") == "AUTO-MATCH"]
@@ -53,6 +54,7 @@ def compute_accuracy_metrics(images: List[Dict[str, Any]], identifications: List
             "review": review,
             "precision": precision,
             "recall": recall,
+            "false_negative_rate": fn_rate,
             "f1_score": f1_score
         },
         "reid_breakdown": {
@@ -69,3 +71,40 @@ def compute_accuracy_metrics(images: List[Dict[str, Any]], identifications: List
             "override_rate_pct": round((len(overrides) / max(1, len(logs))) * 100.0, 2)
         }
     }
+
+
+def audit_false_negatives(quarantined_samples: List[Dict[str, Any]], ground_truth_labels: Dict[str, str] = None) -> Dict[str, Any]:
+    """
+    Audits a sample set of quarantined blank frames to explicitly measure false-negative rate:
+    False Negative = frame marked QUARANTINE that actually contained a target animal/tiger.
+    """
+    total_quarantined = len(quarantined_samples)
+    if total_quarantined == 0:
+        return {"audited_count": 0, "false_negatives_count": 0, "false_negative_rate": 0.0, "status": "clean"}
+
+    fn_count = 0
+    flagged_samples = []
+
+    for item in quarantined_samples:
+        img_id = item.get("image_id") or item.get("filename")
+        # Check against ground truth or override logs
+        true_label = (ground_truth_labels or {}).get(img_id)
+        if true_label and true_label.upper() not in ["BLANK", "EMPTY", "NON_TARGET"]:
+            fn_count += 1
+            flagged_samples.append({
+                "image_id": img_id,
+                "file_path": item.get("file_path"),
+                "ground_truth_label": true_label
+            })
+
+    fn_rate = round(fn_count / float(total_quarantined), 4)
+
+    return {
+        "audited_count": total_quarantined,
+        "false_negatives_count": fn_count,
+        "false_negative_rate": fn_rate,
+        "false_negative_rate_pct": round(fn_rate * 100.0, 2),
+        "flagged_false_negatives": flagged_samples,
+        "assessment": "EXCELLENT (< 1.5% FN)" if fn_rate < 0.015 else "ACTION REQUIRED (FN rate too high)"
+    }
+

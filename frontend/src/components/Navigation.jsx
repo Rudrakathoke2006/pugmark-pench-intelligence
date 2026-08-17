@@ -5,6 +5,7 @@ import {
   Cat, 
   Map, 
   UserCheck, 
+  CheckCircle2,
   AlertTriangle, 
   FileText, 
   Sliders,
@@ -21,9 +22,11 @@ export default function Navigation({ activeTab, setActiveTab, pendingCount, aler
       ]
     },
     {
-      title: 'REVIEW',
+      title: 'REVIEW PIPELINE',
       items: [
-        { id: 'review', label: 'Review Queue', icon: UserCheck, badge: pendingCount },
+        { id: 'ai_detections', label: '🤖 ML Model Recommendations', icon: Cpu },
+        { id: 'review', label: '👤 Human Officer Review', icon: UserCheck, badge: pendingCount },
+        { id: 'verified_outputs', label: '🏁 Verified Final Outputs', icon: CheckCircle2 },
         { id: 'alerts', label: 'Alerts Feed', icon: AlertTriangle, badge: alertCount, badgeColor: 'bg-amber-100 text-amber-800 border-amber-300' },
       ]
     },

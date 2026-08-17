@@ -63,7 +63,7 @@ export default function Ingestion({ onComplete, onNavigate }) {
 
       fetchLiveStatus();
       if (isStreamActive) {
-        timer = setInterval(fetchLiveStatus, 1500);
+        timer = setInterval(fetchLiveStatus, 700);
       }
     }
 
@@ -533,6 +533,29 @@ export default function Ingestion({ onComplete, onNavigate }) {
           {/* Results Details */}
           {ingestionMode === 'video' ? (
             <div className="space-y-4">
+              {/* Test Case Status Banners */}
+              {results.triage_summary?.animal_kept === 0 ? (
+                <div className="p-4 rounded-xl bg-rose-50 border-2 border-rose-300 text-rose-900 font-bold text-xs flex items-center gap-2 shadow-sm">
+                  <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0" />
+                  <div>
+                    <div className="font-extrabold text-sm">No Tiger Match Found</div>
+                    <div className="text-xs text-rose-800 font-normal">
+                      No confident tiger triggers detected in uploaded video footage. 100% of frames categorized as blank vegetation, shadows, or non-target activity.
+                    </div>
+                  </div>
+                </div>
+              ) : results.frames?.some(f => f.reid?.decision === 'MULTIPLE-TIGERS-REVIEW') ? (
+                <div className="p-4 rounded-xl bg-amber-50 border-2 border-amber-300 text-amber-950 font-bold text-xs flex items-center gap-2 shadow-sm">
+                  <AlertTriangle className="w-5 h-5 text-amber-700 shrink-0" />
+                  <div>
+                    <div className="font-extrabold text-sm">Multiple Tigers Detected (2+ Tigers)</div>
+                    <div className="text-xs text-amber-900 font-normal">
+                      Multiple tigers detected in footage. Automatic single-tiger recommendation disabled — routed to Officer Review Queue for manual multi-tiger verification.
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
                 <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200">
                   <div className="text-[10px] text-slate-600 font-bold uppercase">Extracted Frames</div>
@@ -561,6 +584,71 @@ export default function Ingestion({ onComplete, onNavigate }) {
                     controls 
                     className="w-full max-h-80 object-contain rounded-lg"
                   />
+                </div>
+              )}
+
+              {/* Extracted Keyframe Image Gallery */}
+              {results.frames && results.frames.length > 0 && (
+                <div className="space-y-3 pt-2">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-xs font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-emerald-700" />
+                      Extracted Video Keyframes ({results.frames.length} Samples)
+                    </h4>
+                    <button
+                      onClick={() => onNavigate && onNavigate('ai_detections')}
+                      className="text-xs font-bold text-emerald-800 hover:underline flex items-center gap-1"
+                    >
+                      View in AI Model Recommendations &rarr;
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    {results.frames.map((frame, idx) => (
+                      <div key={idx} className="bg-slate-50 rounded-xl border border-slate-200 p-2 space-y-2">
+                        <div className="w-full h-32 rounded-lg overflow-hidden bg-slate-900 relative">
+                          <img
+                            src={frame.frame_path}
+                            alt={`Frame ${frame.sample_number}`}
+                            className="w-full h-full object-cover"
+                          />
+                          <div className="absolute top-1.5 left-1.5 px-2 py-0.5 rounded bg-slate-900/80 text-white font-mono text-[9px] font-bold">
+                            Frame #{frame.sample_number} ({frame.timestamp_sec}s)
+                          </div>
+                          <div className={`absolute bottom-1.5 right-1.5 px-2 py-0.5 rounded text-[9px] font-bold font-mono ${
+                            frame.decision === 'KEEP' 
+                              ? 'bg-emerald-600 text-white' 
+                              : frame.decision === 'REVIEW' 
+                              ? 'bg-amber-500 text-white' 
+                              : 'bg-slate-700 text-slate-200'
+                          }`}>
+                            {frame.decision === 'QUARANTINE' ? 'NO TIGER' : frame.decision}
+                          </div>
+                        </div>
+
+                        <div className="text-[10px] space-y-0.5">
+                          {frame.decision === 'QUARANTINE' || frame.animal_confidence === 0 ? (
+                            <div className="p-1 rounded bg-slate-100 text-slate-600 font-bold text-[10px] text-center border border-slate-200">
+                              No tiger present in frame
+                            </div>
+                          ) : (
+                            <>
+                              <div className="flex justify-between text-slate-600 font-medium">
+                                <span>MegaDetector:</span>
+                                <span className="font-bold text-slate-800">{(frame.animal_confidence * 100).toFixed(0)}%</span>
+                              </div>
+                              {frame.reid && (
+                                <div className="flex justify-between text-slate-600 font-medium">
+                                  <span>Match ({frame.reid.best_tiger_id || 'AI'}):</span>
+                                  <span className="font-bold text-emerald-800">{(frame.reid.match_score * 100).toFixed(0)}% SIFT</span>
+                                </div>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
@@ -614,6 +702,27 @@ export default function Ingestion({ onComplete, onNavigate }) {
               </div>
             </div>
           )}
+
+          {/* Bottom Next Step Navigation Banner */}
+          <div className="pt-6 border-t border-slate-200 flex flex-col md:flex-row justify-between items-center gap-4 bg-emerald-50/90 p-5 rounded-2xl border border-emerald-200 shadow-sm">
+            <div>
+              <div className="font-extrabold text-sm text-slate-900 flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-amber-600 animate-pulse" />
+                <span>Stage 0 Ingestion Complete — Ready for Stage 1 ML Model Predictions</span>
+              </div>
+              <p className="text-xs text-slate-600 mt-0.5 font-medium">
+                Video keyframes extracted &amp; pre-filtered. Proceed to inspect ML recommendations or officer review queue.
+              </p>
+            </div>
+
+            <button
+              onClick={() => onNavigate('ai_detections')}
+              className="px-5 py-3 rounded-xl bg-[#1b4332] hover:bg-[#2d6a4f] text-white font-extrabold text-xs transition-all shadow-md flex items-center gap-2 shrink-0"
+            >
+              <span>Proceed to ML Model Recommendations (Next Step)</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       )}
     </div>

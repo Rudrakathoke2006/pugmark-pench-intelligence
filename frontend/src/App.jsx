@@ -11,6 +11,9 @@ import Alerts from './pages/Alerts';
 import AuditLogs from './pages/AuditLogs';
 import Settings from './pages/Settings';
 
+import AiDetectionsView from './pages/AiDetectionsView';
+import VerifiedOutputsView from './pages/VerifiedOutputsView';
+
 export default function App() {
   const [activeTab, setActiveTab] = useState('overview');
   const [selectedTigerId, setSelectedTigerId] = useState(null);
@@ -111,10 +114,30 @@ export default function App() {
             />
           )}
 
+          {activeTab === 'ai_detections' && (
+            <AiDetectionsView 
+              onNavigate={setActiveTab}
+            />
+          )}
+
+          {activeTab === 'review' && (
+            <ReviewQueue 
+              queue={reviewQueue}
+              onRefresh={() => fetchData()}
+            />
+          )}
+
+          {activeTab === 'verified_outputs' && (
+            <VerifiedOutputsView 
+              onNavigateMap={handleNavigateMapWithTiger}
+            />
+          )}
+
           {activeTab === 'tigers' && (
             <Tigers 
               tigers={tigers}
               onSelectTiger={handleSelectTiger}
+              onDeleteTiger={() => fetchData()}
             />
           )}
 
@@ -128,13 +151,6 @@ export default function App() {
 
           {activeTab === 'map' && (
             <MapPage selectedTigerId={selectedTigerId} />
-          )}
-
-          {activeTab === 'review' && (
-            <ReviewQueue 
-              queue={reviewQueue}
-              onRefresh={() => fetchData()}
-            />
           )}
 
           {activeTab === 'alerts' && (

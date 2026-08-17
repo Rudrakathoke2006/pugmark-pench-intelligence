@@ -1,15 +1,33 @@
 import React, { useState } from 'react';
-import { Cat, Search, ChevronRight, Calendar } from 'lucide-react';
+import { Cat, Search, ChevronRight, Calendar, Trash2 } from 'lucide-react';
 
-export default function Tigers({ tigers, onSelectTiger }) {
+export default function Tigers({ tigers, onSelectTiger, onDeleteTiger }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [sexFilter, setSexFilter] = useState('ALL');
+  const [deletingId, setDeletingId] = useState(null);
 
   const filtered = (tigers || []).filter((t) => {
     const matchesName = t.name.toLowerCase().includes(searchTerm.toLowerCase()) || t.tiger_id.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesSex = sexFilter === 'ALL' || t.sex.toUpperCase() === sexFilter;
     return matchesName && matchesSex;
   });
+
+  const handleDelete = (e, tigerId) => {
+    e.stopPropagation();
+    if (window.confirm(`Are you sure you want to delete tiger record ${tigerId}?`)) {
+      setDeletingId(tigerId);
+      fetch(`/api/tigers/${tigerId}`, { method: 'DELETE' })
+        .then((res) => res.json())
+        .then(() => {
+          setDeletingId(null);
+          if (onDeleteTiger) onDeleteTiger(tigerId);
+        })
+        .catch((err) => {
+          console.error(err);
+          setDeletingId(null);
+        });
+    }
+  };
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6 select-none">
@@ -55,63 +73,85 @@ export default function Tigers({ tigers, onSelectTiger }) {
 
       {/* Tigers Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {filtered.map((t) => (
-          <div
-            key={t.tiger_id}
-            onClick={() => onSelectTiger(t.tiger_id)}
-            className="bg-white p-5 rounded-2xl border border-slate-200 space-y-4 cursor-pointer group shadow-sm hover:shadow-md hover:border-emerald-500 transition-all"
-          >
-            {/* Reference Image / Flank Crop */}
-            <div className="w-full h-44 rounded-xl overflow-hidden bg-slate-100 border border-slate-200 relative">
-              <img
-                src={t.reference_image_url || "/static/crops/t017_flank.jpg"}
-                alt={t.name}
-                className="w-full h-full object-cover group-hover:scale-105 transition-all duration-300"
-              />
-              <div className="absolute top-2 left-2 px-2.5 py-1 rounded-lg bg-[#1b4332] text-white font-bold text-xs shadow-sm">
-                {t.tiger_id}
-              </div>
-              <div className="absolute bottom-2 right-2 px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 font-mono text-[10px] border border-emerald-300 font-bold">
-                {t.observations} Sightings
-              </div>
-            </div>
+        {filtered.map((t) => {
+          const realPhotos = {
+            'T-017': '/static/crops/t017_flank.jpg',
+            'T-023': '/static/crops/t023_flank.jpg',
+            'T-009': '/static/crops/t009_flank.jpg',
+            'T-031': '/static/crops/t031_flank.jpg'
+          };
+          const photoUrl = realPhotos[t.tiger_id] || t.reference_image_url || "/static/crops/t017_flank.jpg";
 
-            {/* Title & Demographics */}
-            <div className="space-y-1">
-              <h3 className="font-extrabold text-sm text-slate-900 group-hover:text-[#1b4332] transition-colors flex items-center justify-between">
-                <span>{t.name}</span>
-                <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-[#1b4332] group-hover:translate-x-1 transition-all" />
-              </h3>
-              <div className="flex items-center gap-2 text-[11px] text-slate-500 font-semibold">
-                <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-700">{t.sex}</span>
-                <span>•</span>
-                <span>{t.life_stage}</span>
+          return (
+            <div
+              key={t.tiger_id}
+              onClick={() => onSelectTiger(t.tiger_id)}
+              className="bg-white p-5 rounded-2xl border border-slate-200 space-y-4 cursor-pointer group shadow-sm hover:shadow-md hover:border-emerald-500 transition-all relative"
+            >
+              {/* Reference Image / Flank Crop */}
+              <div className="w-full h-44 rounded-xl overflow-hidden bg-slate-100 border border-slate-200 relative">
+                <img
+                  src={photoUrl}
+                  alt={t.name}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-all duration-300"
+                />
+                <div className="absolute top-2 left-2 px-2.5 py-1 rounded-lg bg-[#1b4332] text-white font-bold text-xs shadow-sm">
+                  {t.tiger_id}
+                </div>
+                <button
+                  onClick={(e) => handleDelete(e, t.tiger_id)}
+                  disabled={deletingId === t.tiger_id}
+                  title="Delete Tiger Record"
+                  className="absolute top-2 right-2 p-1.5 rounded-lg bg-red-600/90 text-white hover:bg-red-700 transition-all shadow-md"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+                <div className="absolute bottom-2 left-2 px-2 py-0.5 rounded bg-slate-900/80 text-amber-300 font-mono text-[9px] border border-slate-700 font-semibold">
+                  🏷️ Public Benchmark Dataset
+                </div>
+                <div className="absolute bottom-2 right-2 px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 font-mono text-[10px] border border-emerald-300 font-bold">
+                  {t.observations} Sightings
+                </div>
               </div>
-            </div>
 
-            {/* Spatial Stats Cards */}
-            <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 text-[11px]">
-              <div className="p-2 rounded-lg bg-emerald-50/60 border border-emerald-100">
-                <div className="text-[10px] text-slate-500 uppercase font-bold">95% Home Range</div>
-                <div className="font-extrabold text-[#1b4332] text-xs">{t.kde95_area_km2} km²</div>
+              {/* Title & Demographics */}
+              <div className="space-y-1">
+                <h3 className="font-extrabold text-sm text-slate-900 group-hover:text-[#1b4332] transition-colors flex items-center justify-between">
+                  <span>{t.name}</span>
+                  <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-[#1b4332] group-hover:translate-x-1 transition-all" />
+                </h3>
+                <div className="flex items-center gap-2 text-[11px] text-slate-500 font-semibold">
+                  <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-700">{t.sex}</span>
+                  <span>•</span>
+                  <span>{t.life_stage}</span>
+                </div>
               </div>
-              <div className="p-2 rounded-lg bg-amber-50/60 border border-amber-100">
-                <div className="text-[10px] text-slate-500 uppercase font-bold">50% Core Area</div>
-                <div className="font-extrabold text-amber-800 text-xs">{t.kde50_area_km2} km²</div>
-              </div>
-            </div>
 
-            {/* Sighting Footer */}
-            <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1 font-mono">
-              <span className="flex items-center gap-1">
-                <Calendar className="w-3 h-3 text-slate-400" />
-                Last Seen:
-              </span>
-              <span className="text-slate-700 font-bold">{t.last_seen}</span>
+              {/* Spatial Stats Cards */}
+              <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 text-[11px]">
+                <div className="p-2 rounded-lg bg-emerald-50/60 border border-emerald-100">
+                  <div className="text-[10px] text-slate-500 uppercase font-bold">95% Home Range</div>
+                  <div className="font-extrabold text-[#1b4332] text-xs">{t.kde95_area_km2} km²</div>
+                </div>
+                <div className="p-2 rounded-lg bg-amber-50/60 border border-amber-100">
+                  <div className="text-[10px] text-slate-500 uppercase font-bold">50% Core Area</div>
+                  <div className="font-extrabold text-amber-800 text-xs">{t.kde50_area_km2} km²</div>
+                </div>
+              </div>
+
+              {/* Sighting Footer */}
+              <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1 font-mono">
+                <span className="flex items-center gap-1">
+                  <Calendar className="w-3 h-3 text-slate-400" />
+                  Last Seen:
+                </span>
+                <span className="text-slate-700 font-bold">{t.last_seen}</span>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
 }
+

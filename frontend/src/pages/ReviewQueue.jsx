@@ -8,7 +8,8 @@ import {
   CheckSquare,
   Square,
   Zap,
-  MapPin
+  MapPin,
+  Trash2
 } from 'lucide-react';
 
 export default function ReviewQueue({ queue, onRefresh }) {
@@ -22,9 +23,23 @@ export default function ReviewQueue({ queue, onRefresh }) {
   const canvasRef = useRef(null);
 
   useEffect(() => {
-    if (queue && queue.length > 0 && !selectedItem) {
+    if (!queue || queue.length === 0) {
+      setSelectedItem(null);
+      return;
+    }
+    if (selectedItem) {
+      const match = queue.find(q => q.identification_id === selectedItem.identification_id);
+      if (match) {
+        setSelectedItem(match);
+      } else {
+        setSelectedItem(queue[0]);
+        if (queue[0].candidates?.length > 0) {
+          setSelectedTigerId(queue[0].candidates[0].tiger_id);
+        }
+      }
+    } else {
       setSelectedItem(queue[0]);
-      if (queue[0].candidates && queue[0].candidates.length > 0) {
+      if (queue[0].candidates?.length > 0) {
         setSelectedTigerId(queue[0].candidates[0].tiger_id);
       }
     }
@@ -87,7 +102,20 @@ export default function ReviewQueue({ queue, onRefresh }) {
 
   const handleDecision = (action) => {
     if (!current) return;
-    setIsSubmitting(true);
+    const targetId = current.identification_id;
+    const currentIndex = (queue || []).findIndex(q => q.identification_id === targetId);
+
+    // Filter out the rejected/confirmed item
+    const remaining = (queue || []).filter(q => q.identification_id !== targetId);
+
+    // Advance smoothly to the item at the current index position (or last item if at the end)
+    const nextIdx = Math.min(currentIndex, Math.max(0, remaining.length - 1));
+    const nextItem = remaining.length > 0 ? remaining[nextIdx] : null;
+
+    setSelectedItem(nextItem);
+    if (nextItem?.candidates?.length > 0) {
+      setSelectedTigerId(nextItem.candidates[0].tiger_id);
+    }
 
     const targetTiger = selectedTigerId || (current.candidates?.[0]?.tiger_id || 'T-101');
     const queryParams = new URLSearchParams({
@@ -96,47 +124,56 @@ export default function ReviewQueue({ queue, onRefresh }) {
       ...(newTigerName && { new_tiger_name: newTigerName })
     });
 
-    fetch(`/api/review/${current.identification_id}/decision?${queryParams.toString()}`, {
+    setGisNotification(
+      action === 'CONFIRM' ? `Confirmed & finalized match for ${targetTiger}!` :
+      action === 'REJECT' ? `Rejected frame & moved to Quarantine repository.` :
+      `Enrolled new tiger candidate (${newTigerName || 'Unregistered'}).`
+    );
+    setTimeout(() => setGisNotification(null), 3000);
+    setNewTigerName('');
+
+    fetch(`/api/review/${targetId}/decision?${queryParams.toString()}`, {
       method: 'POST'
     })
       .then((res) => res.json())
-      .then((res) => {
-        setIsSubmitting(false);
-        setSelectedItem(null);
-
-        if (res.gis_recomputed) {
-          setGisNotification(`GIS Home Range & Overlap Matrix recomputed for ${res.assigned_tiger_id}!`);
-          setTimeout(() => setGisNotification(null), 4500);
-        }
-
+      .then(() => {
         if (onRefresh) onRefresh();
       })
       .catch((err) => {
         console.error(err);
-        setIsSubmitting(false);
       });
   };
 
   const handleBatchConfirm = () => {
     if (selectedIds.length === 0) return;
-    setIsSubmitting(true);
-    
+    const count = selectedIds.length;
+    setSelectedIds([]);
+
+    setGisNotification(`Batch confirmed ${count} decisions — updating Pench GIS spatial ranges!`);
+    setTimeout(() => setGisNotification(null), 3000);
+
     Promise.all(
       selectedIds.map(id => 
         fetch(`/api/review/${id}/decision?action=CONFIRM`, { method: 'POST' })
       )
     )
       .then(() => {
-        setIsSubmitting(false);
-        setSelectedIds([]);
-        setGisNotification(`Batch confirmed ${selectedIds.length} decisions and recomputed Pench GIS spatial ranges!`);
-        setTimeout(() => setGisNotification(null), 4500);
         if (onRefresh) onRefresh();
       })
       .catch((err) => {
         console.error(err);
-        setIsSubmitting(false);
       });
+  };
+
+  const handleClearAllPending = () => {
+    fetch('/api/review/clear-all', { method: 'POST' })
+      .then((res) => res.json())
+      .then(() => {
+        setGisNotification('All pending review items cleared!');
+        setTimeout(() => setGisNotification(null), 3000);
+        if (onRefresh) onRefresh();
+      })
+      .catch((err) => console.error(err));
   };
 
   return (
@@ -181,6 +218,14 @@ export default function ReviewQueue({ queue, onRefresh }) {
                 <span>Confirm Selected ({selectedIds.length})</span>
               </button>
             )}
+
+            <button
+              onClick={handleClearAllPending}
+              className="px-3.5 py-1.5 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-800 text-xs font-bold transition-all border border-rose-300 flex items-center gap-1.5"
+            >
+              <Trash2 className="w-3.5 h-3.5 text-rose-700" />
+              <span>Clear All Pending Items</span>
+            </button>
           </div>
         )}
       </div>
@@ -266,20 +311,37 @@ export default function ReviewQueue({ queue, onRefresh }) {
             </div>
           </div>
 
-          {/* Center Column: Visual Match Comparison Canvas */}
+          {/* Center Column: Visual Match Comparison Canvas & Dual-Stage Workflow */}
           <div className="lg:col-span-2 space-y-6">
             <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
               <div className="flex justify-between items-center pb-3 border-b border-slate-100">
                 <div>
-                  <div className="font-extrabold text-sm text-slate-900">
-                    Query Image vs Candidate Tigers
+                  <div className="font-extrabold text-sm text-slate-900 flex items-center gap-2">
+                    <span>Query Camera-Trap Frame vs Candidate Tiger Catalogue</span>
                   </div>
-                  <div className="text-xs text-slate-500">
+                  <div className="text-xs text-slate-500 mt-0.5">
                     Station: <span className="font-bold text-slate-800">{current?.station_name}</span> ({current?.timestamp})
                   </div>
                 </div>
-                <div className="px-3 py-1 rounded-full bg-amber-100 border border-amber-300 text-amber-900 text-xs font-bold">
-                  Score: {(current?.match_score * 100).toFixed(0)}% (Human Review Band)
+                <div className="px-3 py-1 rounded-full bg-amber-100 border border-amber-300 text-amber-900 text-xs font-bold flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-700 animate-pulse" />
+                  <span>AI Score: {(current?.match_score * 100).toFixed(0)}% (Human Review Band)</span>
+                </div>
+              </div>
+
+              {/* Dual-Stage Workflow Banner */}
+              <div className="grid grid-cols-3 gap-2 bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs font-medium">
+                <div className="flex items-center gap-2 text-slate-800 font-bold">
+                  <span className="w-5 h-5 rounded-full bg-[#1b4332] text-white flex items-center justify-center text-[10px]">1</span>
+                  <span>🤖 AI Initial Review</span>
+                </div>
+                <div className="flex items-center gap-2 text-amber-800 font-bold">
+                  <span className="w-5 h-5 rounded-full bg-amber-600 text-white flex items-center justify-center text-[10px]">2</span>
+                  <span>👤 Human Officer Review</span>
+                </div>
+                <div className="flex items-center gap-2 text-emerald-800 font-bold">
+                  <span className="w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px]">3</span>
+                  <span>🏁 Final Verified Output</span>
                 </div>
               </div>
 
@@ -292,7 +354,7 @@ export default function ReviewQueue({ queue, onRefresh }) {
                     className="w-full h-full object-cover"
                   />
                   <div className="absolute bottom-2 left-2 px-2 py-0.5 rounded bg-slate-900/80 text-white font-bold text-[10px]">
-                    Captured Query
+                    Captured Video Keyframe ({current?.station_name || 'ST-01'})
                   </div>
                 </div>
 
@@ -307,23 +369,45 @@ export default function ReviewQueue({ queue, onRefresh }) {
                 <div className="w-5/12 h-full relative rounded-lg overflow-hidden border border-slate-700 bg-slate-950">
                   <img 
                     src={
-                      selectedTigerId === 'T-017' ? '/static/crops/t017_flank.jpg' :
-                      selectedTigerId === 'T-023' ? '/static/crops/t023_flank.jpg' :
-                      '/static/crops/t009_flank.jpg'
+                      selectedTigerId === 'T-023' ? '/static/crops/t023_flank.jpg?v=10' :
+                      '/static/crops/t017_flank.jpg?v=10'
                     } 
                     alt="Candidate" 
                     className="w-full h-full object-cover"
                   />
                   <div className="absolute bottom-2 right-2 px-2 py-0.5 rounded bg-[#1b4332] text-white font-bold text-[10px]">
-                    Candidate: {selectedTigerId || 'T-017'}
+                    Catalogue Target: {selectedTigerId || 'T-017'}
                   </div>
                 </div>
               </div>
 
-              {/* Top Candidates Cards Bar */}
-              <div className="space-y-2">
+              {/* Stage 1: AI Model Prediction Rationale */}
+              <div className={`p-3.5 rounded-xl border text-xs space-y-1.5 ${
+                current?.decision === 'MULTIPLE-TIGERS-REVIEW' || current?.tiger_id === 'Multiple Tigers Detected'
+                  ? 'bg-amber-100 border-amber-300 text-amber-950'
+                  : 'bg-amber-50/70 border-amber-200 text-amber-900'
+              }`}>
+                <div className="flex justify-between items-center font-bold text-amber-900">
+                  <span className="flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-700" />
+                    Stage 1: PUGMARK-V6 Model Recommendation Rationale
+                  </span>
+                  <span className="font-mono text-[11px] bg-amber-200 px-2 py-0.5 rounded text-amber-900">
+                    {current?.decision === 'MULTIPLE-TIGERS-REVIEW' ? 'Multi-Animal Detected' : `Confidence: ${(current?.match_score * 100).toFixed(0)}%`}
+                  </span>
+                </div>
+                <p className="text-slate-700 font-medium text-[11px]">
+                  {current?.decision === 'MULTIPLE-TIGERS-REVIEW' || current?.tiger_id === 'Multiple Tigers Detected'
+                    ? "⚠️ Multiple tigers detected in video footage. Automatic single-tiger recommendation is disabled — please select the appropriate candidate tiger or enroll new tigers below."
+                    : `Flank stripe pattern analysis shows keypoint vector alignments matching candidate ${selectedTigerId || 'T-017'}. Recommended for human officer confirmation.`
+                  }
+                </p>
+              </div>
+
+              {/* Stage 2 & 3: Top Candidates & Human Officer Action Bar */}
+              <div className="space-y-3">
                 <label className="text-xs font-extrabold text-slate-700 uppercase tracking-wider">
-                  Top Candidate Stripe Matches
+                  Stage 2: Select Candidate &amp; Confirm Final Consolidated Output
                 </label>
                 <div className="grid grid-cols-3 gap-3">
                   {current?.candidates?.map((cand) => {
@@ -334,13 +418,13 @@ export default function ReviewQueue({ queue, onRefresh }) {
                         onClick={() => setSelectedTigerId(cand.tiger_id)}
                         className={`p-3 rounded-xl border cursor-pointer transition-all ${
                           isCandSelected 
-                            ? 'bg-emerald-50 border-[#1b4332] shadow-sm' 
+                            ? 'bg-emerald-50 border-[#1b4332] shadow-sm ring-2 ring-[#1b4332]/20' 
                             : 'bg-slate-50 border-slate-200 hover:border-slate-300'
                         }`}
                       >
-                        <div className="font-extrabold text-xs text-slate-900">{cand.tiger_name} ({cand.tiger_id})</div>
+                        <div className="font-extrabold text-xs text-slate-900">{cand.tiger_name}</div>
                         <div className="flex justify-between text-[11px] mt-1 font-mono">
-                          <span className="text-slate-500">Score:</span>
+                          <span className="text-slate-500">SIFT Match:</span>
                           <span className="text-emerald-800 font-bold">{(cand.score * 100).toFixed(0)}%</span>
                         </div>
                       </div>
@@ -349,7 +433,7 @@ export default function ReviewQueue({ queue, onRefresh }) {
                 </div>
               </div>
 
-              {/* Action Buttons Bar */}
+              {/* Final Consolidated Decision Buttons */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2">
                 <button
                   onClick={() => handleDecision('CONFIRM')}
@@ -357,7 +441,7 @@ export default function ReviewQueue({ queue, onRefresh }) {
                   className="py-3 rounded-xl bg-[#1b4332] hover:bg-[#2d6a4f] text-white font-bold text-xs transition-all shadow-md flex items-center justify-center gap-1.5"
                 >
                   <CheckCircle2 className="w-4 h-4" />
-                  <span>Confirm {selectedTigerId || 'Match'}</span>
+                  <span>Confirm &amp; Finalize {selectedTigerId || 'Match'}</span>
                 </button>
 
                 <button
@@ -366,7 +450,7 @@ export default function ReviewQueue({ queue, onRefresh }) {
                   className="py-3 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-700 font-bold text-xs transition-all flex items-center justify-center gap-1.5"
                 >
                   <XCircle className="w-4 h-4 text-rose-600" />
-                  <span>Reject Match</span>
+                  <span>Reject &amp; Quarantine</span>
                 </button>
 
                 <div className="flex items-center gap-1">

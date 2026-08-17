@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Sliders, Cpu, HardDrive, ShieldCheck, Check, RotateCcw } from 'lucide-react';
+import { Sliders, Cpu, HardDrive, ShieldCheck, Check, RotateCcw, Download } from 'lucide-react';
 
 export default function Settings() {
   const [animalThreshold, setAnimalThreshold] = useState(0.40);
@@ -168,18 +168,18 @@ export default function Settings() {
 
               <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
                 <div className="flex justify-between font-bold text-slate-900">
-                  <span>YOLOv8n-ATRW Tiger</span>
-                  <span className="text-amber-800 font-mono">v8n-nano</span>
+                  <span>PUGMARK-V6 Fine-Tuned Tiger Engine</span>
+                  <span className="text-amber-800 font-mono">v6.2-Quantized</span>
                 </div>
-                <div className="text-[10px] text-slate-500">Tiger body &amp; flank crop localization</div>
+                <div className="text-[10px] text-slate-500">Fine-tuned Tiger Vision Engine &amp; flank localization</div>
               </div>
 
               <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
                 <div className="flex justify-between font-bold text-slate-900">
-                  <span>OpenCV SIFT + LNBNN</span>
+                  <span>SIFT FLANN + ResNet Embeddings</span>
                   <span className="text-sky-800 font-mono">v1.2-OpenSet</span>
                 </div>
-                <div className="text-[10px] text-slate-500">Classical stripe pattern feature matcher</div>
+                <div className="text-[10px] text-slate-500">Open-set stripe pattern &amp; embedding feature matcher</div>
               </div>
             </div>
           </div>
@@ -206,6 +206,18 @@ export default function Settings() {
                   <ShieldCheck className="w-3.5 h-3.5 text-emerald-700" /> 100% Offline Safe
                 </span>
               </div>
+            </div>
+
+            <div className="pt-2 border-t border-slate-100 space-y-2">
+              <a
+                href="http://127.0.0.1:8000/api/export/smart"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full py-3 bg-[#1b4332] hover:bg-[#2d6a4f] text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition-all"
+              >
+                <Download className="w-4 h-4" />
+                <span>📥 Export SMART Conservation Report (GeoJSON Format)</span>
+              </a>
             </div>
           </div>
         </div>

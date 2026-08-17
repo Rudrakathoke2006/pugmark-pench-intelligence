@@ -17,18 +17,25 @@ class TriageEngine:
         self.high_threshold = high_threshold
         self.low_threshold = low_threshold
 
-    def evaluate_image(self, filepath: str, mock_animal_conf: float = None) -> Dict[str, Any]:
+    def evaluate_image(
+        self,
+        filepath: str,
+        mock_animal_conf: float = None,
+        season: str = "leaf-on",
+        lighting: str = "day"
+    ) -> Dict[str, Any]:
         image_id = os.path.splitext(os.path.basename(filepath))[0]
-        res = self.detector.classify(image_id, filepath)
+        res = self.detector.classify(image_id, filepath, season=season, lighting=lighting)
 
         if mock_animal_conf is not None:
             animal_conf = mock_animal_conf
             person_conf = 0.05
             vehicle_conf = 0.01
-            if animal_conf >= self.high_threshold:
+            keep_thresh, review_thresh = self.detector.get_thresholds(season, lighting)
+            if animal_conf >= keep_thresh:
                 decision = "KEEP"
-                reason = f"High animal confidence ({animal_conf*100:.1f}% >= {self.high_threshold*100:.0f}%)"
-            elif animal_conf >= self.low_threshold:
+                reason = f"High animal confidence ({animal_conf*100:.1f}% >= {keep_thresh*100:.0f}%)"
+            elif animal_conf >= review_thresh:
                 decision = "REVIEW"
                 reason = f"Uncertain animal confidence ({animal_conf*100:.1f}%)"
             else:
@@ -46,7 +53,9 @@ class TriageEngine:
             "animal_confidence": round(animal_conf, 4),
             "person_confidence": round(person_conf, 4),
             "vehicle_confidence": round(vehicle_conf, 4),
-            "reason": reason
+            "reason": reason,
+            "season": season,
+            "lighting": lighting
         }
 
 triage_service = TriageEngine()

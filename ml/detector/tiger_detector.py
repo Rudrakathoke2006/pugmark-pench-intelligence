@@ -50,26 +50,66 @@ class TigerDetector:
         except Exception as e:
             print(f"Finetune error: {e}")
 
-    def detect_and_crop(self, image_id: str, image_path: str, out_dir: str) -> TigerCrop | None:
+    def detect_and_crop(
+        self,
+        image_id: str,
+        image_path: str,
+        out_dir: str,
+        use_tta: bool = True
+    ) -> TigerCrop | None:
         os.makedirs(out_dir, exist_ok=True)
         crop_path = f"{out_dir}/{image_id}_crop.jpg"
 
+        best_box = None
+        highest_conf = -1.0
+
         if self.model is not None and os.path.exists(image_path):
             try:
+                # Primary forward pass on original frame
                 results = self.model.predict(image_path, device=self.device, verbose=False)[0]
                 if len(results.boxes) > 0:
                     best = max(results.boxes, key=lambda b: float(b.conf))
                     x1, y1, x2, y2 = best.xyxy[0].tolist()
-                    conf = float(best.conf)
+                    highest_conf = float(best.conf)
+                    best_box = (x1, y1, x2 - x1, y2 - y1)
 
+                # Test-Time Augmentation (TTA): Predict on horizontal flip
+                if use_tta:
+                    img_raw = cv2.imread(image_path)
+                    if img_raw is not None:
+                        img_flip = cv2.flip(img_raw, 1)
+                        h_f, w_f = img_flip.shape[:2]
+                        # Temporary write for prediction if needed or pass matrix
+                        temp_flip_path = f"{out_dir}/temp_flip_{image_id}.jpg"
+                        cv2.imwrite(temp_flip_path, img_flip)
+
+                        results_flip = self.model.predict(temp_flip_path, device=self.device, verbose=False)[0]
+                        if os.path.exists(temp_flip_path):
+                            os.remove(temp_flip_path)
+
+                        if len(results_flip.boxes) > 0:
+                            best_f = max(results_flip.boxes, key=lambda b: float(b.conf))
+                            conf_f = float(best_f.conf)
+                            if conf_f > highest_conf:
+                                fx1, fy1, fx2, fy2 = best_f.xyxy[0].tolist()
+                                # Translate flipped box back to original coordinates:
+                                # x1_orig = w_f - fx2, x2_orig = w_f - fx1
+                                orig_x1 = max(0.0, w_f - fx2)
+                                orig_x2 = min(float(w_f), w_f - fx1)
+                                highest_conf = conf_f
+                                best_box = (orig_x1, fy1, orig_x2 - orig_x1, fy2 - fy1)
+
+                if best_box is not None:
+                    x1, y1, bw, bh = best_box
+                    x2, y2 = x1 + bw, y1 + bh
                     img = cv2.imread(image_path)
                     if img is not None:
                         crop = img[int(y1):int(y2), int(x1):int(x2)]
                         if crop.size > 0:
                             cv2.imwrite(crop_path, crop)
-                            return TigerCrop(image_id, (x1, y1, x2 - x1, y2 - y1), conf, crop_path)
-            except Exception:
-                pass
+                            return TigerCrop(image_id, (x1, y1, bw, bh), highest_conf, crop_path)
+            except Exception as err:
+                print(f"TigerDetector detection error: {err}")
 
         # Fallback bounding box crop using center heuristic
         img = cv2.imread(image_path) if os.path.exists(image_path) else None

@@ -142,16 +142,6 @@ export default function GbifNavbar({ activeTab, setActiveTab, pendingCount, aler
             <Search className="w-4 h-4" />
           </button>
 
-          <div className="hidden sm:flex items-center gap-1 text-[11px] text-emerald-100 px-2.5 py-1 rounded-lg bg-[#2d6a4f]">
-            <Globe className="w-3.5 h-3.5 text-emerald-300" />
-            <span>EN</span>
-          </div>
-
-          <div className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#2d6a4f] text-[11px] text-emerald-100">
-            <ShieldCheck className="w-4 h-4 text-emerald-300" />
-            <span className="font-mono text-emerald-300 font-bold">100% Offline</span>
-          </div>
-
           <button
             onClick={() => setActiveTab('audit')}
             className="px-3 py-1.5 rounded-xl bg-emerald-400 hover:bg-emerald-300 text-[#1b4332] font-bold text-xs transition-all flex items-center gap-1.5 shadow-sm"

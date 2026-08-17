@@ -79,13 +79,23 @@ def compute_occupancy(points_latlon: list[tuple[float, float]]) -> OccupancyResu
         mcp_geom = c_point.buffer(0.040)
         mcp_area_km2 = 25.0
 
-    # SciPy 2D Gaussian KDE Surface Estimation
+    # SciPy 2D Gaussian KDE Surface Estimation with Adaptive Grid Resolution
     if gaussian_kde is not None and len(points_latlon) >= 4 and np.std(lats) > 1e-4:
         try:
             kde = gaussian_kde(pts_xy.T, bw_method='scott')
             margin = 5000.0
-            gx = np.linspace(pts_xy[:, 0].min() - margin, pts_xy[:, 0].max() + margin, 60)
-            gy = np.linspace(pts_xy[:, 1].min() - margin, pts_xy[:, 1].max() + margin, 60)
+
+            # Adaptive grid resolution: coarse grid for sparse sightings, fine grid for dense
+            n_pts = len(points_latlon)
+            if n_pts <= 5:
+                grid_res = 40
+            elif n_pts < 15:
+                grid_res = 80
+            else:
+                grid_res = 120
+
+            gx = np.linspace(pts_xy[:, 0].min() - margin, pts_xy[:, 0].max() + margin, grid_res)
+            gy = np.linspace(pts_xy[:, 1].min() - margin, pts_xy[:, 1].max() + margin, grid_res)
             GX, GY = np.meshgrid(gx, gy)
             positions = np.vstack([GX.ravel(), GY.ravel()])
             Z = kde(positions).reshape(GX.shape)

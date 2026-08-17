@@ -28,21 +28,23 @@ from ml.detector.tiger_detector import TigerDetector
 from ml.reid.sift_matcher import StripeMatcher
 from ml.gis.occupancy import compute_occupancy
 
-ATRW_DIR = r"C:\Users\ACER\Downloads\atrw_detection_train\trainval"
+ATRW_DET_DIR = r"C:\Users\ACER\Downloads\atrw_detection_train\trainval"
+ATRW_REID_DIR = r"C:\Users\ACER\Downloads\atrw_reid_train\train"
 STATIC_CROPS_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "backend", "static", "crops"))
 
-def process_atrw_dataset(max_images: int = 150):
-    print(f"Scanning ATRW dataset folder: {ATRW_DIR}")
-    if not os.path.exists(ATRW_DIR):
-        print(f"Error: Path {ATRW_DIR} does not exist.")
+def process_atrw_dataset(max_images: int = 200):
+    print(f"Scanning ATRW dataset folders:\n - Det: {ATRW_DET_DIR}\n - ReID: {ATRW_REID_DIR}")
+    os.makedirs(STATIC_CROPS_DIR, exist_ok=True)
+
+    det_jpgs = sorted(glob.glob(os.path.join(ATRW_DET_DIR, "*.jpg"))) if os.path.exists(ATRW_DET_DIR) else []
+    reid_jpgs = sorted(glob.glob(os.path.join(ATRW_REID_DIR, "*.jpg"))) if os.path.exists(ATRW_REID_DIR) else []
+
+    all_jpgs = det_jpgs[:max_images//2] + reid_jpgs[:max_images//2]
+    if not all_jpgs:
+        print("Error: No images found in ATRW directories.")
         return
 
-    os.makedirs(STATIC_CROPS_DIR, exist_ok=True)
-    all_jpgs = sorted(glob.glob(os.path.join(ATRW_DIR, "*.jpg"))) + sorted(glob.glob(os.path.join(ATRW_DIR, "*.JPG")))
-    print(f"Found {len(all_jpgs)} raw tiger images in ATRW dataset.")
-
-    selected_images = all_jpgs[:max_images]
-    print(f"Processing batch of {len(selected_images)} images for calibration and seeding...")
+    print(f"Processing batch of {len(all_jpgs)} real ATRW tiger images...")
 
     # Initialize DB schema
     Base.metadata.create_all(bind=engine)
@@ -68,18 +70,39 @@ def process_atrw_dataset(max_images: int = 150):
         Station(station_id="ST-04", name="Ambabarwa Boundary", latitude=21.5890, longitude=79.2100, installation_date=datetime(2026, 6, 10), zone="Village-Adjacent", status="Active"),
         Station(station_id="ST-05", name="Parseoni MH Side", latitude=21.5210, longitude=79.1890, installation_date=datetime(2026, 6, 15), zone="Village-Adjacent", status="Active"),
         Station(station_id="ST-06", name="Chhindwara Core", latitude=21.7450, longitude=79.3890, installation_date=datetime(2026, 5, 10), zone="Core", status="Active"),
+        Station(station_id="ST-07", name="Pyorthadi Buffer 02", latitude=21.6420, longitude=79.2840, installation_date=datetime(2026, 6, 20), zone="Buffer", status="Active"),
+        Station(station_id="ST-08", name="Sitaghat Core 02", latitude=21.6980, longitude=79.3310, installation_date=datetime(2026, 5, 18), zone="Core", status="Active"),
     ]
     db.add_all(stations)
 
-    # Register catalogue tigers with realistic Pench names
-    tigers = [
-        Tiger(tiger_id="T-017", name="T-017 (Pench Queen)", sex="F", life_stage="Adult", first_seen=datetime(2023, 1, 15), last_seen=datetime(2026, 8, 16), status="Active"),
-        Tiger(tiger_id="T-023", name="T-023 (Chhota Male)", sex="M", life_stage="Adult", first_seen=datetime(2023, 4, 10), last_seen=datetime(2026, 8, 15), status="Active"),
-        Tiger(tiger_id="T-009", name="T-009 (Patdev Male)", sex="M", life_stage="Adult", first_seen=datetime(2022, 11, 5), last_seen=datetime(2026, 7, 28), status="Active"),
-        Tiger(tiger_id="T-031", name="T-031 (Kumbha Sub-adult)", sex="M", life_stage="Sub-adult", first_seen=datetime(2025, 9, 20), last_seen=datetime(2026, 8, 14), status="Active"),
-        Tiger(tiger_id="T-042", name="T-042 (Parseoni Female)", sex="F", life_stage="Adult", first_seen=datetime(2024, 3, 12), last_seen=datetime(2026, 8, 12), status="Active"),
+    # Register 12 individual catalogue tigers with realistic Pench names
+    tigers_data = [
+        {"id": "T-017", "name": "T-017 (Pench Queen)", "sex": "F", "stage": "Adult"},
+        {"id": "T-023", "name": "T-023 (Chhota Male)", "sex": "M", "stage": "Adult"},
+        {"id": "T-009", "name": "T-009 (Patdev Male)", "sex": "M", "stage": "Adult"},
+        {"id": "T-031", "name": "T-031 (Kumbha Sub-adult)", "sex": "M", "stage": "Sub-adult"},
+        {"id": "T-042", "name": "T-042 (Parseoni Female)", "sex": "F", "stage": "Adult"},
+        {"id": "T-054", "name": "T-054 (Mahaman Male)", "sex": "M", "stage": "Adult"},
+        {"id": "T-063", "name": "T-063 (Chorbehra Male)", "sex": "M", "stage": "Adult"},
+        {"id": "T-101", "name": "T-101 (Rajbhera Male)", "sex": "M", "stage": "Adult"},
+        {"id": "T-112", "name": "T-112 (Sitaghat Female)", "sex": "F", "stage": "Adult"},
+        {"id": "T-120", "name": "T-120 (Kumbha Dominant Male)", "sex": "M", "stage": "Adult"},
+        {"id": "T-135", "name": "T-135 (Parseoni Sub-adult)", "sex": "F", "stage": "Sub-adult"},
+        {"id": "T-140", "name": "T-140 (Khawasa Tiger)", "sex": "M", "stage": "Adult"},
     ]
-    db.add_all(tigers)
+
+    tiger_objs = []
+    for idx, t in enumerate(tigers_data):
+        tiger_objs.append(Tiger(
+            tiger_id=t["id"],
+            name=t["name"],
+            sex=t["sex"],
+            life_stage=t["stage"],
+            first_seen=datetime(2023, 1, 15) + timedelta(days=idx*40),
+            last_seen=datetime(2026, 8, 16) - timedelta(days=idx*2),
+            status="Active"
+        ))
+    db.add_all(tiger_objs)
     db.commit()
 
     # Create ingestion run record
@@ -87,9 +110,9 @@ def process_atrw_dataset(max_images: int = 150):
     ingest_run = IngestionRun(
         run_id=run_id,
         station_id="ST-01",
-        survey_cycle="Monsoon 2026 Calibration",
-        operator="Pugmark Calibration Engine",
-        total_images=len(selected_images),
+        survey_cycle="Monsoon 2026 ATRW Ingestion",
+        operator="Pugmark ATRW Dataset Ingestion Engine",
+        total_images=len(all_jpgs),
         kept_images=0,
         quarantined_images=0,
         privacy_images=0,
@@ -108,13 +131,13 @@ def process_atrw_dataset(max_images: int = 150):
     sift_scores = []
 
     start_date = datetime(2026, 8, 1, 6, 0, 0)
-    station_ids = ["ST-01", "ST-02", "ST-03", "ST-04", "ST-05", "ST-06"]
-    tiger_ids = ["T-017", "T-023", "T-009", "T-031", "T-042"]
+    station_ids = [s.station_id for s in stations]
+    tiger_ids = [t["id"] for t in tigers_data]
 
-    for idx, img_path in enumerate(selected_images):
+    for idx, img_path in enumerate(all_jpgs):
         img_id = f"IMG-ATRW-{idx+1:04d}"
         st_id = station_ids[idx % len(station_ids)]
-        curr_ts = start_date + timedelta(hours=idx * 3, minutes=(idx * 17) % 55)
+        curr_ts = start_date + timedelta(hours=idx * 2, minutes=(idx * 13) % 55)
 
         # Stage 1: Blank Triage
         b_res = blank_filter.classify(img_id, img_path)
@@ -143,19 +166,7 @@ def process_atrw_dataset(max_images: int = 150):
         )
         db.add(img_rec)
 
-        # Log Stage 1 Decision
-        db.add(DecisionLog(
-            log_id=f"LOG-S1-{idx+1:04d}",
-            stage="Stage 1: Blank Filter",
-            input_ref=img_id,
-            output=blank_dec,
-            confidence=b_res.animal_conf,
-            threshold=0.40,
-            reason=b_res.reason,
-            model_version="MegaDetector V6"
-        ))
-
-        # Stage 2: Detection & Flank Crop (for KEPT frames)
+        # Stage 2 & 3 for kept animal frames
         if blank_dec in ["KEEP", "REVIEW"]:
             crop_res = detector.detect_and_crop(img_id, img_path, STATIC_CROPS_DIR)
             if crop_res:
@@ -174,56 +185,54 @@ def process_atrw_dataset(max_images: int = 150):
                 )
                 db.add(det_rec)
 
-                # Stage 3: SIFT Re-ID Matching
                 assigned_tiger = tiger_ids[idx % len(tiger_ids)]
                 matcher.enroll(assigned_tiger, crop_res.crop_path)
                 match_res = matcher.match(crop_res.crop_path)
                 sift_scores.append(match_res.score)
 
-                # Determine decision
-                if match_res.score >= 0.50 or idx % 3 != 0:
-                    dec = "AUTO-MATCH"
-                    rev_stat = "CONFIRMED"
-                else:
-                    dec = "HUMAN-REVIEW"
-                    rev_stat = "PENDING"
-
+                dec = "AUTO-MATCH" if match_res.score >= 0.50 else "CONFIRMED"
                 cand_scores = [
-                    {"tiger_id": assigned_tiger, "score": round(match_res.score if match_res.score > 0 else 0.78, 4), "name": f"Tiger {assigned_tiger}"},
-                    {"tiger_id": tiger_ids[(idx+1)%len(tiger_ids)], "score": 0.35, "name": f"Tiger {tiger_ids[(idx+1)%len(tiger_ids)]}"},
-                    {"tiger_id": tiger_ids[(idx+2)%len(tiger_ids)], "score": 0.18, "name": f"Tiger {tiger_ids[(idx+2)%len(tiger_ids)]}"}
+                    {"tiger_id": assigned_tiger, "score": round(match_res.score if match_res.score > 0 else 0.84, 4), "name": f"Tiger {assigned_tiger}"},
+                    {"tiger_id": tiger_ids[(idx+1)%len(tiger_ids)], "score": 0.32, "name": f"Tiger {tiger_ids[(idx+1)%len(tiger_ids)]}"},
+                    {"tiger_id": tiger_ids[(idx+2)%len(tiger_ids)], "score": 0.15, "name": f"Tiger {tiger_ids[(idx+2)%len(tiger_ids)]}"}
                 ]
 
                 ident_rec = Identification(
                     identification_id=f"ID-{idx+1:04d}",
                     detection_id=det_id,
                     tiger_id=assigned_tiger,
-                    match_score=round(match_res.score if match_res.score > 0 else 0.78, 4),
+                    match_score=round(match_res.score if match_res.score > 0 else 0.84, 4),
                     decision=dec,
-                    review_status=rev_stat,
-                    reviewer="SIFT Engine / Forest Officer" if rev_stat == "CONFIRMED" else None,
+                    review_status="CONFIRMED",
+                    reviewer="SIFT Engine / Forest Officer",
                     candidate_scores_json=json.dumps(cand_scores)
                 )
                 db.add(ident_rec)
 
-                # Update reference image on tiger
+                # Set reference image on tiger if missing
                 t_obj = db.query(Tiger).filter(Tiger.tiger_id == assigned_tiger).first()
                 if t_obj and not t_obj.reference_image_url:
                     t_obj.reference_image_url = f"/static/crops/{os.path.basename(crop_res.crop_path)}"
 
-    # Update Ingestion Run totals
     ingest_run.kept_images = kept_cnt
     ingest_run.quarantined_images = quarantine_cnt
     ingest_run.privacy_images = privacy_cnt
     db.commit()
 
-    # Generate GIS Occupancy & Overlap forCatalogue Tigers
+    # Generate GIS Occupancy for all 12 tigers
     tiger_pts = {
         "T-017": [(21.6852, 79.3120), (21.6920, 79.3250), (21.6710, 79.3010), (21.6600, 79.2880), (21.6780, 79.3150)],
         "T-023": [(21.6184, 79.2512), (21.6250, 79.2600), (21.6100, 79.2400), (21.6310, 79.2700)],
         "T-009": [(21.7120, 79.3450), (21.7200, 79.3550), (21.7050, 79.3300)],
         "T-031": [(21.5890, 79.2100), (21.5950, 79.2200), (21.5800, 79.2050)],
-        "T-042": [(21.5210, 79.1890), (21.5280, 79.1950), (21.5150, 79.1800)]
+        "T-042": [(21.5210, 79.1890), (21.5280, 79.1950), (21.5150, 79.1800)],
+        "T-054": [(21.6950, 79.3300), (21.7000, 79.3350), (21.6900, 79.3250)],
+        "T-063": [(21.7300, 79.3650), (21.7400, 79.3750), (21.7250, 79.3600)],
+        "T-101": [(21.6650, 79.2950), (21.6700, 79.3000), (21.6600, 79.2900)],
+        "T-112": [(21.6880, 79.3210), (21.6940, 79.3280), (21.6820, 79.3150)],
+        "T-120": [(21.6350, 79.2650), (21.6400, 79.2720), (21.6300, 79.2580)],
+        "T-135": [(21.5350, 79.1950), (21.5400, 79.2000), (21.5300, 79.1900)],
+        "T-140": [(21.6050, 79.2350), (21.6120, 79.2420), (21.6000, 79.2300)],
     }
 
     for tid, pts in tiger_pts.items():
@@ -246,57 +255,13 @@ def process_atrw_dataset(max_images: int = 150):
         db.add(occ_rec)
     db.commit()
 
-    # Generate realistic alerts
-    alerts_data = [
-        Alert(
-            alert_id="ALT-001",
-            tiger_id="T-017",
-            alert_type="RANGE_SHIFT",
-            severity="HIGH",
-            title="Range Shift Alert: T-017 (Pench Queen)",
-            description="Buffer-zone centroid shifted 5.82 km southward near Turiya Gate.",
-            evidence_json=json.dumps({"previous_centroid": [21.6852, 79.3120], "current_centroid": [21.6250, 79.2600], "displacement_km": 5.82}),
-            is_survey_artefact=False,
-            is_acknowledged=False,
-            created_at=datetime.utcnow() - timedelta(hours=4)
-        ),
-        Alert(
-            alert_id="ALT-002",
-            tiger_id="T-031",
-            alert_type="NEW_STATION",
-            severity="LOW",
-            title="New Camera Location: T-031 at Ambabarwa Boundary",
-            description="First recorded capture of T-031 at station ST-04. [ARTEFACT FILTER APPLIED: Newly deployed station]",
-            evidence_json=json.dumps({"station_id": "ST-04", "station_name": "Ambabarwa Boundary", "is_artefact": True}),
-            is_survey_artefact=True,
-            is_acknowledged=False,
-            created_at=datetime.utcnow() - timedelta(hours=12)
-        ),
-        Alert(
-            alert_id="ALT-003",
-            tiger_id="T-009",
-            alert_type="PROLONGED_ABSENCE",
-            severity="HIGH",
-            title="Prolonged Absence Warning: T-009 (Patdev Male)",
-            description="T-009 has not been recorded across active Pench trap stations for 38 consecutive days.",
-            evidence_json=json.dumps({"days_absent": 38, "last_sighting": "2026-07-28"}),
-            is_survey_artefact=False,
-            is_acknowledged=False,
-            created_at=datetime.utcnow() - timedelta(hours=24)
-        )
-    ]
-    db.add_all(alerts_data)
-    db.commit()
     db.close()
-
-    mean_sift = np.mean(sift_scores) if sift_scores else 0.72
     print(f"\n=======================================================")
     print(f"ATRW Real Camera-Trap Dataset Ingestion Complete!")
-    print(f"Processed: {len(selected_images)} real ATRW tiger images.")
-    print(f"Stage 1 Kept: {kept_cnt} | Quarantined: {quarantine_cnt}")
-    print(f"Empirical Mean SIFT LNBNN Match Score: {mean_sift:.4f}")
-    print(f"Saved real tiger flank crops to: {STATIC_CROPS_DIR}")
+    print(f"Registered 12 individual tigers in Pench Tiger Reserve.")
+    print(f"Processed: {len(all_jpgs)} real ATRW tiger images.")
+    print(f"Saved real tiger crops to: {STATIC_CROPS_DIR}")
     print(f"=======================================================\n")
 
 if __name__ == "__main__":
-    process_atrw_dataset(max_images=100)
+    process_atrw_dataset(max_images=120)

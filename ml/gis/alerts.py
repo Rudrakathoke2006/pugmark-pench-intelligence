@@ -45,18 +45,51 @@ def geodesic_km(p1: tuple[float, float], p2: tuple[float, float]) -> float:
     return float(R * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a)))
 
 
-def check_range_shift(historical_centroid: tuple[float, float], current_centroid: tuple[float, float], zone: str,
-                       historical_core_area_km2: float, current_core_area_km2: float) -> Alert | None:
-    if zone.lower() == "buffer":
-        dist_km = geodesic_km(historical_centroid, current_centroid)
+def check_range_shift(
+    historical_centroids: list[tuple[float, float]],
+    current_centroid: tuple[float, float],
+    zone: str,
+    historical_core_area_km2: float,
+    current_core_area_km2: float,
+    repeat_alert_count: int = 0
+) -> Alert | None:
+    """
+    Checks range shift against a rolling baseline of the last N=3..5 historical centroids,
+    and escalates severity if the alert is repeating across consecutive survey runs.
+    """
+    if not historical_centroids:
+        return None
+
+    # Handle legacy call where single tuple (lat, lon) is passed
+    if isinstance(historical_centroids, tuple) and len(historical_centroids) == 2 and isinstance(historical_centroids[0], (int, float)):
+        historical_centroids = [historical_centroids]
+
+    # Calculate rolling baseline centroid across last 3 runs
+    recent = historical_centroids[-3:]
+    baseline_lat = float(sum(p[0] for p in recent) / len(recent))
+    baseline_lon = float(sum(p[1] for p in recent) / len(recent))
+    baseline_centroid = (baseline_lat, baseline_lon)
+
+    if zone.lower() in ["buffer", "village-adjacent"]:
+        dist_km = geodesic_km(baseline_centroid, current_centroid)
         if dist_km > RANGE_SHIFT_BUFFER_KM:
-            return Alert("range_shift", "high", dist_km, "km",
-                         f"Buffer-zone centroid shifted {dist_km:.1f} km, exceeding the 5 km rule")
-    else:  # core -- area-change rule, not distance
+            severity = "high"
+            if repeat_alert_count >= 1:
+                severity = "critical"
+            reason = f"Buffer-zone centroid shifted {dist_km:.1f} km vs rolling baseline ({len(recent)} runs)"
+            if repeat_alert_count >= 1:
+                reason += f" [ESCALATED TREND: Fired {repeat_alert_count + 1} consecutive runs]"
+            return Alert("range_shift", severity, dist_km, "km", reason)
+    else:  # core -- area-change rule
         area_change = abs(current_core_area_km2 - historical_core_area_km2)
         if area_change > RANGE_SHIFT_CORE_KM2:
-            return Alert("range_shift", "high", area_change, "km2",
-                         f"Core home-range area changed by {area_change:.1f} km2")
+            severity = "high"
+            if repeat_alert_count >= 1:
+                severity = "critical"
+            reason = f"Core home-range area changed by {area_change:.1f} km2 vs rolling baseline"
+            if repeat_alert_count >= 1:
+                reason += f" [ESCALATED TREND: Fired {repeat_alert_count + 1} consecutive runs]"
+            return Alert("range_shift", severity, area_change, "km2", reason)
     return None
 
 

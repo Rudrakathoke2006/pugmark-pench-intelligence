@@ -99,23 +99,29 @@ export default function Overview({ overview, alerts, onNavigate, onSelectTiger }
             <div className="w-12 h-12 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center mx-auto text-[#1b4332] shadow-inner">
               <Database className="w-6 h-6" />
             </div>
-            <div className="text-3xl font-black text-slate-900 font-mono tracking-tight">1,250,340</div>
-            <div className="text-xs font-bold text-slate-500">Occurrence Records</div>
+            <div className="text-3xl font-black text-slate-900 font-mono tracking-tight">
+              {overview?.images?.total ? overview.images.total.toLocaleString() : "1,250"}
+            </div>
+            <div className="text-xs font-bold text-slate-500">Total Ingested Images</div>
           </div>
 
           <div className="p-6 bg-white rounded-2xl border border-slate-200 space-y-2 shadow-sm">
             <div className="w-12 h-12 rounded-full bg-amber-50 border border-amber-200 flex items-center justify-center mx-auto text-amber-700 shadow-inner">
               <Layers className="w-6 h-6" />
             </div>
-            <div className="text-3xl font-black text-slate-900 font-mono tracking-tight">123,630</div>
-            <div className="text-xs font-bold text-slate-500">Camera Trap Datasets</div>
+            <div className="text-3xl font-black text-slate-900 font-mono tracking-tight">
+              {overview?.images?.kept ? overview.images.kept.toLocaleString() : "340"}
+            </div>
+            <div className="text-xs font-bold text-slate-500">Kept Animal Captures</div>
           </div>
 
           <div className="p-6 bg-white rounded-2xl border border-slate-200 space-y-2 shadow-sm">
             <div className="w-12 h-12 rounded-full bg-sky-50 border border-sky-200 flex items-center justify-center mx-auto text-sky-700 shadow-inner">
               <Building2 className="w-6 h-6" />
             </div>
-            <div className="text-3xl font-black text-slate-900 font-mono tracking-tight">12</div>
+            <div className="text-3xl font-black text-slate-900 font-mono tracking-tight">
+              {overview?.stations || 12}
+            </div>
             <div className="text-xs font-bold text-slate-500">Camera Stations</div>
           </div>
 
@@ -123,7 +129,9 @@ export default function Overview({ overview, alerts, onNavigate, onSelectTiger }
             <div className="w-12 h-12 rounded-full bg-purple-50 border border-purple-200 flex items-center justify-center mx-auto text-purple-700 shadow-inner">
               <FileText className="w-6 h-6" />
             </div>
-            <div className="text-3xl font-black text-slate-900 font-mono tracking-tight">8</div>
+            <div className="text-3xl font-black text-slate-900 font-mono tracking-tight">
+              {overview?.tigers || 4}
+            </div>
             <div className="text-xs font-bold text-slate-500">Registered Individuals</div>
           </div>
         </div>
@@ -202,7 +210,7 @@ export default function Overview({ overview, alerts, onNavigate, onSelectTiger }
           >
             <div className="w-full h-44 bg-slate-100 overflow-hidden relative">
               <img
-                src="/static/crops/t017_flank.jpg"
+                src="/static/crops/t017_flank.jpg?v=3"
                 alt="T-017 Queen"
                 className="w-full h-full object-cover group-hover:scale-105 transition-all duration-300"
               />
@@ -233,7 +241,7 @@ export default function Overview({ overview, alerts, onNavigate, onSelectTiger }
           >
             <div className="w-full h-44 bg-slate-100 overflow-hidden relative">
               <img
-                src="/static/crops/t023_flank.jpg"
+                src="/static/crops/t023_flank.jpg?v=3"
                 alt="SIFT Matching"
                 className="w-full h-full object-cover group-hover:scale-105 transition-all duration-300"
               />
@@ -264,7 +272,7 @@ export default function Overview({ overview, alerts, onNavigate, onSelectTiger }
           >
             <div className="w-full h-44 bg-slate-100 overflow-hidden relative">
               <img
-                src="/static/crops/t031_flank.jpg"
+                src="/static/crops/t017_flank.jpg?v=10"
                 alt="Ambabarwa Camera"
                 className="w-full h-full object-cover group-hover:scale-105 transition-all duration-300"
               />
@@ -278,7 +286,7 @@ export default function Overview({ overview, alerts, onNavigate, onSelectTiger }
                   New camera trap station deployment at Ambabarwa Boundary
                 </h4>
                 <p className="text-[11px] text-slate-500 line-clamp-2">
-                  Artefact filter successfully suppressed false alarm for T-031 sub-adult.
+                  Expanded survey coverage verified with active tiger movement monitoring.
                 </p>
               </div>
               <div className="text-[10px] text-slate-400 font-mono flex items-center gap-2 pt-2 border-t border-slate-100">
@@ -295,7 +303,7 @@ export default function Overview({ overview, alerts, onNavigate, onSelectTiger }
           >
             <div className="w-full h-44 bg-slate-100 overflow-hidden relative">
               <img
-                src="/static/crops/t009_flank.jpg"
+                src="/static/crops/t023_flank.jpg?v=10"
                 alt="Data Use"
                 className="w-full h-full object-cover group-hover:scale-105 transition-all duration-300"
               />
