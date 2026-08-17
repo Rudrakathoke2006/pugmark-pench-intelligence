@@ -11,7 +11,8 @@ import {
   Radio,
   Activity,
   RadioTower,
-  Pause
+  Pause,
+  ArrowRight
 } from 'lucide-react';
 
 export default function Ingestion({ onComplete, onNavigate }) {
