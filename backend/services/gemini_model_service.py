@@ -41,6 +41,7 @@ class GeminiTrainedModelService:
         self.blank_filter = BlankFilter()
         self.detector = TigerDetector()
         self.matcher = StripeMatcher()
+        self.result_cache = {}
 
     def prefilter_frame(self, image_path: str) -> dict:
         """
@@ -50,6 +51,13 @@ class GeminiTrainedModelService:
         - verdict: "no_tiger" | "single_tiger" | "multiple_tigers"
         - per_tiger_confidence: list of float 0-1
         """
+        if not image_path:
+            return {"tiger_count": 0, "verdict": "no_tiger", "per_tiger_confidence": [], "species": "Vegetation_Blank", "reason": "Empty path", "source": "local"}
+
+        cache_key = f"prefilter_{image_path}_{os.path.getmtime(image_path) if os.path.exists(image_path) else 0}"
+        if cache_key in self.result_cache:
+            return self.result_cache[cache_key]
+
         filename = os.path.basename(image_path)
         if self.api_key and os.path.exists(image_path):
             try:
@@ -132,6 +140,13 @@ Base tiger_count on actual visible tigers only. If the frame shows no tiger, tig
         Processes camera-trap frame or crop using Gemini API if key is present,
         or local YOLOv11n + SIFT FLANN engine fallback. Returns structured model output.
         """
+        if not image_path:
+            return {"model_name": MODEL_NAME, "species": "Vegetation_Blank", "tiger_count": 0, "verdict": "no_tiger"}
+
+        cache_key = f"analyze_{image_path}_{image_id}_{os.path.getmtime(image_path) if os.path.exists(image_path) else 0}"
+        if cache_key in self.result_cache:
+            return self.result_cache[cache_key]
+
         filename = os.path.basename(image_path)
 
         # Execute pre-filter triage first
