@@ -112,7 +112,7 @@ export default function AiDetectionsView({ onNavigate }) {
                     </div>
                     <p className="text-[10px] text-slate-700">
                       {item.decision === 'QUARANTINE' || item.tiger_count === 0
-                        ? "No tiger present in this frame — Gemini pre-filter triage halted further identification pipeline."
+                        ? "No tiger present in this frame — MegaDetector pre-filter triage halted further identification pipeline."
                         : isMultiTigers
                         ? "Multiple tigers detected in video footage. Automatic single-tiger recommendation disabled — routed to Officer Review Queue."
                         : `Stripe pattern vector matches target ${cand?.name || cand?.tiger_id || 'T-017'}. SIFT Flank Stripe Pattern Match Score: ${(item.match_score * 100).toFixed(0)}%.`

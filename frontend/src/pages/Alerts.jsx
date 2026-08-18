@@ -129,7 +129,7 @@ export default function Alerts({ alerts, onAcknowledgeAlert, onNavigateMap }) {
                   className="py-2 px-3 bg-amber-100 hover:bg-amber-200 text-amber-950 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-all border border-amber-300 shadow-sm"
                 >
                   <Sparkles className="w-3.5 h-3.5 text-amber-700" />
-                  <span>📄 Generate Ranger Patrol Briefing (Gemini Augmented)</span>
+                  <span>📄 Generate Ranger Patrol Briefing</span>
                 </button>
               </div>
             </div>
@@ -147,7 +147,7 @@ export default function Alerts({ alerts, onAcknowledgeAlert, onNavigateMap }) {
                   <Sparkles className="w-6 h-6 text-amber-700" />
                 </div>
                 <div>
-                  <div className="text-[10px] font-extrabold text-amber-800 uppercase tracking-wider">Gemini Patrol Briefing</div>
+                  <div className="text-[10px] font-extrabold text-amber-800 uppercase tracking-wider">Ranger Patrol Briefing</div>
                   <h3 className="text-lg font-extrabold text-slate-900">Ranger Field Briefing — {selectedBriefing.tiger_id}</h3>
                 </div>
               </div>
@@ -164,7 +164,7 @@ export default function Alerts({ alerts, onAcknowledgeAlert, onNavigateMap }) {
             </div>
 
             <div className="flex justify-between items-center text-[10px] text-slate-500 font-mono pt-1">
-              <span>Source: Gemini Vision LLM Augmentation</span>
+              <span>Source: Automated Spatial Intelligence Engine</span>
               <span>Pench Range Patrol Directive</span>
             </div>
 
