@@ -29,8 +29,22 @@ export default function AiDetectionsView({ onNavigate }) {
           </p>
         </div>
 
-        {/* Filter Toggle */}
-        <div className="flex items-center gap-2">
+        {/* Filter Toggle & Re-run ML Action */}
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={() => {
+              fetch('/api/review/reset-queue', { method: 'POST' })
+                .then(() => fetch('/api/review/queue'))
+                .then((res) => res.json())
+                .then((data) => setDetections(data))
+                .catch((err) => console.error(err));
+            }}
+            className="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold transition-all shadow-sm flex items-center gap-1.5"
+          >
+            <Cpu className="w-4 h-4" />
+            <span>⚡ Re-run ML Pipeline</span>
+          </button>
+
           <select
             value={filterSpecies}
             onChange={(e) => setFilterSpecies(e.target.value)}

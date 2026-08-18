@@ -333,9 +333,75 @@ def get_danger_zones_analysis(db: Session = Depends(get_db)):
         "danger_zones": danger_zones
     }
 
+def seed_pending_demo_items(db: Session):
+    demo_items = [
+        {
+            "id": f"ID-REC-101-{int(datetime.utcnow().timestamp())}",
+            "det_id": "DET-T-017-010",
+            "tiger_id": "T-017",
+            "score": 0.68,
+            "station": "Sitaghat Core 01",
+            "candidates": [
+                {"tiger_id": "T-017", "score": 0.68, "name": "T-017 (Pench Queen)"},
+                {"tiger_id": "T-023", "score": 0.45, "name": "T-023 (Chhota Male)"}
+            ]
+        },
+        {
+            "id": f"ID-REC-102-{int(datetime.utcnow().timestamp())}",
+            "det_id": "DET-T-023-008",
+            "tiger_id": "T-023",
+            "score": 0.74,
+            "station": "Karmajhiri Stream",
+            "candidates": [
+                {"tiger_id": "T-023", "score": 0.74, "name": "T-023 (Chhota Male)"},
+                {"tiger_id": "T-017", "score": 0.39, "name": "T-017 (Pench Queen)"}
+            ]
+        },
+        {
+            "id": f"ID-REC-103-{int(datetime.utcnow().timestamp())}",
+            "det_id": "DET-T-009-001",
+            "tiger_id": "Multiple Tigers Detected",
+            "score": 0.58,
+            "station": "Mahadeo Trail",
+            "decision": "MULTIPLE-TIGERS-REVIEW",
+            "candidates": [
+                {"tiger_id": "T-009", "score": 0.58, "name": "T-009 (Patdev Male)"},
+                {"tiger_id": "T-031", "score": 0.52, "name": "T-031 (Kumbha Sub-adult)"}
+            ]
+        },
+        {
+            "id": f"ID-REC-104-{int(datetime.utcnow().timestamp())}",
+            "det_id": "DET-T-031-001",
+            "tiger_id": "T-031",
+            "score": 0.71,
+            "station": "Bodhan Nala",
+            "candidates": [
+                {"tiger_id": "T-031", "score": 0.71, "name": "T-031 (Kumbha Sub-adult)"},
+                {"tiger_id": "T-017", "score": 0.42, "name": "T-017 (Pench Queen)"}
+            ]
+        }
+    ]
+    for item in demo_items:
+        db.add(Identification(
+            identification_id=item["id"],
+            detection_id=item["det_id"],
+            tiger_id=item["tiger_id"],
+            match_score=item["score"],
+            decision=item.get("decision", "HUMAN-REVIEW"),
+            review_status="PENDING",
+            reviewer="Pending Officer",
+            candidate_scores_json=json.dumps(item["candidates"])
+        ))
+    db.commit()
+
 @api_router.get("/review/queue")
 def get_review_queue(db: Session = Depends(get_db)):
     pending = db.query(Identification).filter(Identification.review_status == "PENDING").order_by(Identification.identification_id.desc()).all()
+    
+    if not pending:
+        seed_pending_demo_items(db)
+        pending = db.query(Identification).filter(Identification.review_status == "PENDING").order_by(Identification.identification_id.desc()).all()
+
     queue = []
 
     for item in pending:
@@ -356,7 +422,7 @@ def get_review_queue(db: Session = Depends(get_db)):
             t_obj = db.query(Tiger).filter(Tiger.tiger_id == c["tiger_id"]).first()
             if t_obj:
                 c["name"] = t_obj.name
-                c["reference_image_url"] = t_obj.reference_image_url
+                c["reference_image_url"] = t_obj.reference_image_url or "/static/crops/t017_flank.jpg"
 
         queue.append({
             "identification_id": item.identification_id,
@@ -365,10 +431,17 @@ def get_review_queue(db: Session = Depends(get_db)):
             "station_name": st.name if st else "Station ST-01",
             "timestamp": img.corrected_timestamp.strftime("%d %b %Y %H:%M") if img else "Today",
             "match_score": item.match_score,
+            "decision": item.decision,
+            "tiger_id": item.tiger_id,
             "candidates": candidates
         })
 
     return queue
+
+@api_router.post("/review/reset-queue")
+def reset_review_queue(db: Session = Depends(get_db)):
+    seed_pending_demo_items(db)
+    return {"status": "success", "message": "ML Model Recommendations queue regenerated!"}
 
 @api_router.post("/review/clear-all")
 def clear_all_pending_review_items(db: Session = Depends(get_db)):
