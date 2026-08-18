@@ -54,7 +54,7 @@ export default function VerifiedOutputsView({ onNavigateMap }) {
               />
               <div className="absolute top-2 left-2 px-2.5 py-1 rounded-full bg-emerald-600 text-white font-extrabold text-[10px] flex items-center gap-1 shadow-md">
                 <CheckCircle2 className="w-3 h-3" />
-                <span>VERIFIED BY AI & OFFICER</span>
+                <span>VERIFIED BY ML RECOMMENDATION & OFFICER</span>
               </div>
               <div className="absolute bottom-2 left-2 px-2 py-0.5 rounded bg-slate-900/80 text-white font-mono font-bold text-[10px]">
                 ID: {t.tiger_id}

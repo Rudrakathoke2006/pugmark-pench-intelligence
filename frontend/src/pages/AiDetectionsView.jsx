@@ -82,7 +82,7 @@ export default function AiDetectionsView({ onNavigate }) {
                   ) : (
                     <div className="absolute top-2 left-2 px-2 py-0.5 rounded bg-amber-500/90 text-white font-extrabold text-[10px] flex items-center gap-1">
                       <Sparkles className="w-3 h-3" />
-                      <span>AI Predicted: {cand?.name || cand?.tiger_id || 'T-017'}</span>
+                      <span>ML Recommended: {cand?.name || cand?.tiger_id || 'T-017'}</span>
                     </div>
                   )}
 

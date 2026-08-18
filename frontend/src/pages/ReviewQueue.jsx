@@ -325,7 +325,7 @@ export default function ReviewQueue({ queue, onRefresh }) {
                 </div>
                 <div className="px-3 py-1 rounded-full bg-amber-100 border border-amber-300 text-amber-900 text-xs font-bold flex items-center gap-1.5">
                   <Sparkles className="w-3.5 h-3.5 text-amber-700 animate-pulse" />
-                  <span>AI Score: {(current?.match_score * 100).toFixed(0)}% (Human Review Band)</span>
+                  <span>ML Score: {(current?.match_score * 100).toFixed(0)}% (Human Review Band)</span>
                 </div>
               </div>
 
@@ -333,7 +333,7 @@ export default function ReviewQueue({ queue, onRefresh }) {
               <div className="grid grid-cols-3 gap-2 bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs font-medium">
                 <div className="flex items-center gap-2 text-slate-800 font-bold">
                   <span className="w-5 h-5 rounded-full bg-[#1b4332] text-white flex items-center justify-center text-[10px]">1</span>
-                  <span>🤖 AI Initial Review</span>
+                  <span>🤖 ML Initial Recommendation</span>
                 </div>
                 <div className="flex items-center gap-2 text-amber-800 font-bold">
                   <span className="w-5 h-5 rounded-full bg-amber-600 text-white flex items-center justify-center text-[10px]">2</span>
