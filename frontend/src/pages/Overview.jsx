@@ -276,8 +276,8 @@ export default function Overview({ overview, alerts, onNavigate, onSelectTiger }
                 alt="Ambabarwa Camera"
                 className="w-full h-full object-cover group-hover:scale-105 transition-all duration-300"
               />
-              <div className="absolute top-2 left-2 px-2 py-0.5 rounded bg-sky-600 text-white font-bold text-[10px]">
-                Artefact Filter
+              <div className="absolute top-2 left-2 px-2 py-0.5 rounded bg-rose-600 text-white font-bold text-[10px]">
+                {alerts?.length > 0 ? `${alerts.length} Active Spatial Alerts` : 'Spatial Alerts'}
               </div>
             </div>
             <div className="p-4 space-y-2 flex-1 flex flex-col justify-between">

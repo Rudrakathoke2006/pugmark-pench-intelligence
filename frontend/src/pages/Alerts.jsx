@@ -3,13 +3,11 @@ import {
   AlertTriangle, 
   Check, 
   Flame,
-  Sparkles,
-  X
+  MapPin
 } from 'lucide-react';
 
 export default function Alerts({ alerts, onAcknowledgeAlert, onNavigateMap }) {
   const [filterType, setFilterType] = useState('ALL');
-  const [selectedBriefing, setSelectedBriefing] = useState(null);
 
   const filtered = (alerts || []).filter((a) => {
     return filterType === 'ALL' || a.alert_type === filterType;
@@ -83,8 +81,17 @@ export default function Alerts({ alerts, onAcknowledgeAlert, onNavigateMap }) {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3">
-                  <span className="text-xs text-slate-500 font-mono font-bold">{alt.created_at}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-slate-500 font-mono font-bold mr-1">{alt.created_at}</span>
+                  {alt.evidence_json?.tiger_id && onNavigateMap && (
+                    <button
+                      onClick={() => onNavigateMap(alt.evidence_json.tiger_id)}
+                      className="px-3 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-[#1b4332] font-bold text-xs transition-all border border-emerald-200 flex items-center gap-1.5"
+                    >
+                      <MapPin className="w-3.5 h-3.5" />
+                      <span>View on Map</span>
+                    </button>
+                  )}
                   {!alt.is_acknowledged ? (
                     <button
                       onClick={() => onAcknowledgeAlert(alt.alert_id)}

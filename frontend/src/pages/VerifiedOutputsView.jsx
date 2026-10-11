@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CheckCircle2, ShieldCheck, MapPin, Calendar, FileText, Download } from 'lucide-react';
+import { CheckCircle2, ShieldCheck, MapPin, Download } from 'lucide-react';
 
 export default function VerifiedOutputsView({ onNavigateMap }) {
   const [verifiedList, setVerifiedList] = useState([]);

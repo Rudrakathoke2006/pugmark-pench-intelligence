@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Sparkles, Cpu, Eye, CheckCircle2, ShieldAlert, ArrowRight } from 'lucide-react';
+import { Sparkles, Cpu, Eye, ShieldAlert, ArrowRight } from 'lucide-react';
 
 export default function AiDetectionsView({ onNavigate }) {
   const [detections, setDetections] = useState([]);

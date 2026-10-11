@@ -2,9 +2,7 @@ import React, { useState } from 'react';
 import { 
   Search, 
   ChevronDown, 
-  Globe, 
   Cat, 
-  ShieldCheck,
   User,
   Menu,
   X

@@ -27,22 +27,17 @@ export default function ReviewQueue({ queue, onRefresh }) {
       setSelectedItem(null);
       return;
     }
-    if (selectedItem) {
-      const match = queue.find(q => q.identification_id === selectedItem.identification_id);
-      if (match) {
-        setSelectedItem(match);
-      } else {
-        setSelectedItem(queue[0]);
-        if (queue[0].candidates?.length > 0) {
-          setSelectedTigerId(queue[0].candidates[0].tiger_id);
-        }
+    setSelectedItem((prev) => {
+      if (prev) {
+        const match = queue.find(q => q.identification_id === prev.identification_id);
+        if (match) return match;
       }
-    } else {
-      setSelectedItem(queue[0]);
-      if (queue[0].candidates?.length > 0) {
-        setSelectedTigerId(queue[0].candidates[0].tiger_id);
+      const first = queue[0];
+      if (first?.candidates?.length > 0) {
+        setSelectedTigerId(first.candidates[0].tiger_id);
       }
-    }
+      return first;
+    });
   }, [queue]);
 
   const current = selectedItem || (queue && queue.length > 0 ? queue[0] : null);
@@ -145,15 +140,17 @@ export default function ReviewQueue({ queue, onRefresh }) {
   };
 
   const handleBatchConfirm = () => {
-    if (selectedIds.length === 0) return;
+    if (selectedIds.length === 0 || isSubmitting) return;
     const count = selectedIds.length;
+    const idsToSubmit = [...selectedIds];
+    setIsSubmitting(true);
     setSelectedIds([]);
 
     setGisNotification(`Batch confirmed ${count} decisions — updating Pench GIS spatial ranges!`);
     setTimeout(() => setGisNotification(null), 3000);
 
     Promise.all(
-      selectedIds.map(id => 
+      idsToSubmit.map(id => 
         fetch(`/api/review/${id}/decision?action=CONFIRM`, { method: 'POST' })
       )
     )
@@ -162,6 +159,9 @@ export default function ReviewQueue({ queue, onRefresh }) {
       })
       .catch((err) => {
         console.error(err);
+      })
+      .finally(() => {
+        setIsSubmitting(false);
       });
   };
 

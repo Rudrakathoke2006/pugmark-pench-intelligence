@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
   ArrowLeft, 
-  MapPin, 
-  Calendar, 
   Activity, 
   Compass
 } from 'lucide-react';

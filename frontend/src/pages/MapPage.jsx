@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Polygon } from 'react-leaflet';
 import L from 'leaflet';
-import { Layers, Compass, Play, Pause, RotateCcw, Navigation, MapPin, Car, ExternalLink, Radio, X, AlertTriangle, Activity, Flame, ShieldAlert, Clock, BarChart3 } from 'lucide-react';
+import { Layers, Compass, Play, Pause, RotateCcw, Navigation, Car, ExternalLink, Radio, X, AlertTriangle, Flame, ShieldAlert, Clock } from 'lucide-react';
 
 const createCustomIcon = (zone, isHighlighted = false) => {
   const color = zone === 'Core' ? '#1b4332' : zone === 'Buffer' ? '#d97706' : '#dc2626';
@@ -230,6 +230,24 @@ export default function MapPage({ selectedTigerId }) {
                 }`}
               >
                 Reserve Zones
+              </button>
+
+              <button
+                onClick={() => setShowKDE95(!showKDE95)}
+                className={`px-3 py-2 rounded-xl border font-bold transition-all ${
+                  showKDE95 ? 'bg-blue-100 text-blue-900 border-blue-300' : 'bg-slate-100 text-slate-500 border-slate-200'
+                }`}
+              >
+                95% Home Range
+              </button>
+
+              <button
+                onClick={() => setShowKDE50(!showKDE50)}
+                className={`px-3 py-2 rounded-xl border font-bold transition-all ${
+                  showKDE50 ? 'bg-indigo-100 text-indigo-900 border-indigo-300' : 'bg-slate-100 text-slate-500 border-slate-200'
+                }`}
+              >
+                50% Core Area
               </button>
             </>
           )}
